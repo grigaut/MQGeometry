@@ -19,6 +19,8 @@ from mqgeometry.masks import Masks
 from mqgeometry.qgm import QGFV
 import torch.nn.functional as F
 
+from mqgeometry.stretching_matrix import compute_A, compute_layers_to_mode_decomposition
+
 
 class QGMixed(QGFV):
     _alpha: torch.Tensor = None
@@ -147,29 +149,15 @@ class QGMixed(QGFV):
     def compute_auxillary_matrices(self):
         # A operator
         H, g_prime = self.H.squeeze(), self.g_prime.squeeze()
-        self.A = torch.zeros((self.nl, self.nl), **self.arr_kwargs)
-        if self.nl == 1:
-            self.A[0, 0] = 1.0 / (H * g_prime)
-        else:
-            self.A[0, 0] = 1.0 / (H[0] * g_prime[0]) + 1.0 / (H[0] * g_prime[1])
-            self.A[0, 1] = -1.0 / (H[0] * g_prime[1])
-            for i in range(1, self.nl - 1):
-                self.A[i, i - 1] = -1.0 / (H[i] * g_prime[i])
-                self.A[i, i] = 1.0 / H[i] * (1 / g_prime[i + 1] + 1 / g_prime[i])
-                self.A[i, i + 1] = -1.0 / (H[i] * g_prime[i + 1])
-            self.A[-1, -1] = 1.0 / (H[self.nl - 1] * g_prime[self.nl - 1])
-            self.A[-1, -2] = -1.0 / (H[self.nl - 1] * g_prime[self.nl - 1])
+        self.A = compute_A(H, g_prime, **self.arr_kwargs)
         self._A11 = self.A[0, 0]
         self._A12 = self.A[0, 1]
         self.A = self.A[:1, :1]
-
+        Cm2l, Lambda, Cl2m = compute_layers_to_mode_decomposition(self.A)
         # layer-to-mode and mode-to-layer matrices
-        ev_A, P = torch.linalg.eig(self.A)
-        self.lambda_sq = self.f0**2 * (
-            ev_A.real.reshape((1, self.nl - 1, 1, 1)) + self.alpha * self._A12
-        )
-        self.Cl2m = torch.linalg.inv(P.real)
-        self.Cm2l = P.real
+        self.lambda_sq = self.f0**2 * Lambda.real.reshape((1, self.nl, 1, 1))
+        self.Cl2m = Cl2m
+        self.Cm2l = Cm2l
         self.rossby_radii = self.lambda_sq.squeeze().pow(-0.5)[0, 0]
         with np.printoptions(precision=1):
             print(f"Rossby rad.: {self.rossby_radii.cpu().numpy() / 1e3} km")
