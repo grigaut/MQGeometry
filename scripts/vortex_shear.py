@@ -4,7 +4,7 @@ import numpy as np
 import time
 import torch
 
-from helmholtz import solve_helmholtz_dst, solve_helmholtz_dst_cmm
+from mqgeometry.helmholtz import solve_helmholtz_dst, solve_helmholtz_dst_cmm
 from mqgeometry.qgm import QGFV
 
 torch.backends.cudnn.deterministic = True
