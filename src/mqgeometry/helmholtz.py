@@ -34,10 +34,11 @@ def compute_laplace_dst(nx, ny, dx, dy, arr_kwargs) -> torch.Tensor:
     )
 
 
-def solve_helmholtz_dst(rhs, helmholtz_dst):
+def solve_helmholtz_dst(rhs: torch.Tensor, helmholtz_dst: torch.Tensor) -> torch.Tensor:
     return F.pad(
-        dstI2D(dstI2D(rhs.type(helmholtz_dst.dtype)) / helmholtz_dst), (1, 1, 1, 1)
-    ).type(torch.float64)
+        dstI2D(dstI2D(rhs.type(helmholtz_dst.dtype)) / helmholtz_dst),
+        (1, 1, 1, 1),
+    ).type(rhs.dtype)
 
 
 def compute_capacitance_matrices(helmholtz_dst, bound_xids, bound_yids):
