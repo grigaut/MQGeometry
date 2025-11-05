@@ -165,6 +165,17 @@ class QGFV:
         )
         self.helmholtz_dst = self.helmholtz_dst.type(torch.float32)
 
+    def set_psiq(self, psi: torch.Tensor, q: torch.Tensor) -> None:
+        """Set the values of ѱ and q."""
+        if psi.shape != (s := (self.n_ens, self.nl, self.nx + 1, self.ny + 1)):
+            msg = f"ѱ should be {s}-shaped."
+            raise ValueError(msg)
+        if q.shape != (s := (self.n_ens, self.nl, self.nx, self.ny)):
+            msg = f"q should be {s}-shaped."
+            raise ValueError(msg)
+        self.psi = psi
+        self.q = q
+
     def compute_q_from_psi(self):
         self.q = self.masks.q * (
             interp_TP(
