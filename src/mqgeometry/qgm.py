@@ -282,11 +282,11 @@ class QGFV:
 
     def set_psiq(self, psi: torch.Tensor, q: torch.Tensor) -> None:
         """Set the values of ѱ and q."""
-        if psi.shape != (s := (self.n_ens, self.nl, self.nx + 1, self.ny + 1)):
-            msg = f"ѱ should be {s}-shaped."
+        if psi.shape != self.psi_shape:
+            msg = f"ѱ should be {self.psi_shape}-shaped."
             raise ValueError(msg)
-        if q.shape != (s := (self.n_ens, self.nl, self.nx, self.ny)):
-            msg = f"q should be {s}-shaped."
+        if q.shape != self.q_shape:
+            msg = f"q should be {self.q_shape}-shaped."
             raise ValueError(msg)
         self.psi = psi
         self.q = q
@@ -333,7 +333,6 @@ class QGFV:
 
     def compute_time_derivatives_no_bc(self) -> tuple[torch.Tensor, torch.Tensor]:
         dq = self.advection_rhs_no_bc()
-        self.dq = dq
 
         # Solve Helmholtz equation
         dq_i = self.interp_TP(dq)
@@ -375,7 +374,6 @@ class QGFV:
 
     def compute_time_derivatives_with_bc(self) -> tuple[torch.Tensor, torch.Tensor]:
         dq = self.advection_rhs_with_bc()
-        self.dq = dq
 
         dq_i = self.interp_TP(dq)
 
