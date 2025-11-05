@@ -15,10 +15,9 @@ def interp_TP(f):
 
 def laplacian(f: torch.Tensor, dx: float, dy: float) -> torch.Tensor:
     """Non-padded laplacian."""
-    return (
-        (f[..., 2:, 1:-1] + f[..., :-2, 1:-1] - 2 * f[..., 1:-1, 1:-1]) / dx**2
-        + (f[..., 1:-1, 2:] + f[..., 1:-1, :-2] - 2 * f[..., 1:-1, 1:-1]) / dy**2,
-    )
+    return (f[..., 2:, 1:-1] + f[..., :-2, 1:-1] - 2 * f[..., 1:-1, 1:-1]) / dx**2 + (
+        f[..., 1:-1, 2:] + f[..., 1:-1, :-2] - 2 * f[..., 1:-1, 1:-1]
+    ) / dy**2
 
 
 def laplacian_h(f, dx, dy):
