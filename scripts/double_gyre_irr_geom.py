@@ -18,8 +18,8 @@ print(device, dtype)
 n_ens = 1
 nl = 3
 nx = 256
-ny = 512
-dt = 7200
+ny = 256
+dt = 4000
 # nx = 512
 # ny = 512
 # dt = 2000
@@ -64,6 +64,13 @@ bottom_drag_coef = delta_ek / H[-1].cpu().item() * f0 / 2
 
 # octogonal domain
 mask = torch.ones(nx, ny)
+for i in range(nx // 4):
+    for j in range(ny // 4):
+        if i + j < min(nx // 4, ny // 4):
+            mask[i, j] = 0.0
+            mask[i, -1 - j] = 0.0
+            mask[-1 - i, j] = 0.0
+            mask[-1 - i, -1 - j] = 0.0
 
 param = {
     "nx": nx,
@@ -102,7 +109,9 @@ if freq_plot > 0:
 
     plt.ion()
     f, a = plt.subplots(1, 1, figsize=(20, 10))
-    f.suptitle(f"Upper layer stream function, {t / (365 * 86400):.2f} yrs")
+    f.suptitle(
+        f"Upper layer relative voriticy (units of f0), {t / (365 * 86400):.2f} yrs"
+    )
 
 
 t0 = time.time()
@@ -117,9 +126,13 @@ for n in range(1, n_steps + 1):
 
     if freq_plot > 0 and (n % freq_plot == 0 or n == n_steps):
         w_over_f0 = (qg.laplacian_h(qg.psi, qg.dx, qg.dy) / qg.f0 * qg.masks.psi).cpu()
-        im = a.imshow(qg.psi[0, 0].cpu().T, cmap="bwr", origin="lower")
+        im = a.imshow(
+            w_over_f0[0, 0].T, cmap="bwr", vmin=-0.2, vmax=0.2, origin="lower"
+        )
         f.colorbar(im) if n // freq_plot == 1 else None
-        f.suptitle(f"Upper layer stream function, {t / (365 * 86400):.2f} yrs")
+        f.suptitle(
+            f"Upper layer relative vorticity (units of $f_0$), {t / (365 * 86400):.2f} yrs"
+        )
         plt.pause(0.01)
 
     if freq_log > 0 and n % freq_log == 0:
