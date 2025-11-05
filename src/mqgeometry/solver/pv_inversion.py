@@ -431,7 +431,7 @@ class InhomogeneousPVInversion(BasePVInversion):
         pv_bc = torch.zeros_like(interp_TP(sf_b))
         self._psi_b = sf_b
         self._psi_h = sf_h
-        self._psiq_bc = (sf_bc, pv_bc)
+        self.psiq_bc = (sf_bc, pv_bc)
 
     def set_boundaries_from_tensors(
         self,
