@@ -2,87 +2,46 @@
 Double-gyre on octogonal domain
 """
 
+from pathlib import Path
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import time
 import torch
-
+from mqgeometry.cli import ScriptArgs
+from mqgeometry.config import load_config
 from mqgeometry.qg_mixed import QGMixed
+from mqgeometry.specs import defaults
 
 torch.backends.cudnn.deterministic = True
-device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float64
-print(device, dtype)
 
-# grid
-n_ens = 1
-nl = 3 - 1
-nx = 256
-ny = 512
-dt = 7200
-# nx = 512
-# ny = 512
-# dt = 2000
+args = ScriptArgs.from_cli(config_default=Path("configs/double_gyre.toml"))
+specs = defaults.get()
+config = load_config(args.config)
+
+n_ens = config["n_ens"]
+nx = config["xv"].shape[0] - 1
+ny = config["yv"].shape[0] - 1
+dt = config["dt"]
+
 
 output_dir = f"run_outputs/{nx}x{ny}_dt{dt}/"
 os.makedirs(output_dir) if not os.path.isdir(output_dir) else None
 
-Lx = 5120.0e3
-Ly = 5120.0e3
-
-# vertex grid
-xv = torch.linspace(0, Lx, nx + 1, dtype=torch.float64, device=device)
-yv = torch.linspace(0, Ly, ny + 1, dtype=torch.float64, device=device)
-
-# layer thickness
-H = torch.zeros(nl, 1, 1, dtype=dtype, device=device)
-H[0, 0, 0] = 400.0
-H[1, 0, 0] = 1100.0
-
-# gravity
-g_prime = torch.zeros(nl, 1, 1, dtype=dtype, device=device)
-g_prime[0, 0, 0] = 9.81
-g_prime[1, 0, 0] = 0.025
-
-# Coriolis beta plane
-f0 = 9.375e-5  # mean coriolis (s^-1)
-beta = 1.754e-11  # coriolis gradient (m^-1 s^-1)
+yv = config["yv"]
+Ly = yv[-1] - yv[0]
 
 # forcing
 yc = 0.5 * (yv[1:] + yv[:-1])  # cell centers
-tau0 = 0.08 / 1000
+tau0 = config.pop("tau0")
 curl_tau = -tau0 * 2 * torch.pi / Ly * torch.sin(2 * torch.pi * yc / Ly).tile((nx, 1))
 curl_tau = curl_tau.unsqueeze(0).repeat(n_ens, 1, 1, 1)
-# drag
-delta_ek = 2.0
-bottom_drag_coef = delta_ek / H[-1].cpu().item() * f0 / 2
-bottom_drag_coef = 0
 
-# octogonal domain
-mask = torch.ones(nx, ny)
-
-param = {
-    "xv": xv,
-    "yv": yv,
-    "n_ens": n_ens,
-    "mask": mask,
-    "flux_stencil": 5,
-    "H": H,
-    "g_prime": g_prime,
-    "tau0": tau0,
-    "f0": f0,
-    "beta": beta,
-    "bottom_drag_coef": bottom_drag_coef,
-    "device": device,
-    "dt": dt,  # time-step (s)
-}
-
-qg = QGMixed(param)
+qg = QGMixed(config)
 qg.set_wind_forcing(curl_tau)
 # qg.alpha = torch.ones_like(qg.psi)
 
 # time params
-dt = param["dt"]
 t = 0
 n_steps = int(50 * 365 * 24 * 3600 / dt) + 1
 freq_log = 1000

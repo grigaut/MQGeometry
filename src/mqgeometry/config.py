@@ -1,0 +1,49 @@
+"""Configuration related tools."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import tomllib
+from typing import Any
+
+import torch
+
+from mqgeometry.specs import defaults
+
+
+def load_config(file: str | Path) -> dict[str, Any]:
+    """Load model configuration from toml file.
+
+    Args:
+        file (str | Path): Toml file.
+
+    Returns:
+        dict[str, Any]: Configuration.
+    """
+    config_data = tomllib.load(Path(file).open("rb"))
+    specs = defaults.get()
+    Lx = config_data["Lx"]
+    nx = config_data["nx"]
+    Ly = config_data["Ly"]
+    ny = config_data["ny"]
+    xv = torch.linspace(0, Lx, nx + 1, **specs)
+    yv = torch.linspace(0, Ly, ny + 1, **specs)
+
+    H = torch.tensor(config_data["H"], **specs)[:, None, None]
+    g_prime = torch.tensor(config_data["g_prime"], **specs)[:, None, None]
+
+    return {
+        "xv": xv,
+        "yv": yv,
+        "n_ens": config_data.get("n_ens", 1),
+        "mask": torch.ones(nx, ny, **specs),
+        "flux_stencil": config_data.get("flux_stencil", 5),
+        "H": H,
+        "g_prime": g_prime,
+        "tau0": config_data.get("tau0", 8e-5),
+        "f0": config_data["f0"],
+        "beta": config_data.get("beta", 0),
+        "bottom_drag_coef": config_data.get("bottom_drag_coef", 0),
+        "device": specs["device"],
+        "dt": config_data["dt"],  # time-step (s)
+    }
