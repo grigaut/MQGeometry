@@ -1,6 +1,7 @@
 """Input / Output related methods."""
 
 from pathlib import Path
+import toml
 import torch
 
 
@@ -19,6 +20,10 @@ class SaveState:
         self.folder = Path(output_folder)
         if not self.folder.exists():
             self.folder.mkdir()
+            gitignore = self.folder.joinpath(".gitignore")
+            with gitignore.open("w") as file:
+                file.write("*")
+
         self.tensors = {}
 
     def register_tensors(self, **tensors: torch.Tensor) -> None:
@@ -39,3 +44,15 @@ class SaveState:
             raise ValueError(msg)
         path = self.folder.joinpath(filename)
         torch.save({k: v.detach().cpu() for k, v in self.tensors.items()}, path)
+
+    def copy_config(self, config_path: str | Path) -> None:
+        """Save registered tensors.
+
+        Args:
+            filename (str): Name of the file to save in.
+
+        Raises:
+            ValueError: If no tensors were registered.
+        """
+        path = self.folder.joinpath("_config.toml")
+        toml.dump(toml.load(Path(config_path)), path.open("w"))
