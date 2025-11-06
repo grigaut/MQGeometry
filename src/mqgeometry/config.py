@@ -63,3 +63,18 @@ def load_output_config(file: str | Path) -> dict[str, Any]:
         "folder": config_data.get("folder", "output"),
         "interval": config_data.get("interval", 1),
     }
+
+
+def load_simulation_config(file: str | Path) -> dict[str, Any]:
+    """Load output configuration from toml file.
+
+    Args:
+        file (str | Path): Toml file.
+
+    Returns:
+        dict[str, Any]: Configuration.
+    """
+    config_data = toml.load(Path(file))
+    return {
+        "duration": config_data.get("duration"),
+    }

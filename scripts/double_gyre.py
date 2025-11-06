@@ -6,7 +6,11 @@ from pathlib import Path
 import torch
 
 from mqgeometry.cli import ScriptArgs
-from mqgeometry.config import load_model_config, load_output_config
+from mqgeometry.config import (
+    load_model_config,
+    load_output_config,
+    load_simulation_config,
+)
 from mqgeometry.io import SaveState
 from mqgeometry.qgm import QGFV
 from mqgeometry.specs import defaults
@@ -17,6 +21,7 @@ args = ScriptArgs.from_cli(config_default=Path("configs/double_gyre.toml"))
 specs = defaults.get()
 config = load_model_config(args.config)
 output_config = load_output_config(args.config)
+sim_config = load_simulation_config(args.config)
 
 n_ens = config["n_ens"]
 nx = config["xv"].shape[0] - 1
@@ -41,7 +46,7 @@ saver.save("ic.pt")
 saver.copy_config(args.config)
 
 # time params
-n_steps = 2
+n_steps = sim_config["duration"]
 
 # time integration
 for n in range(1, n_steps + 1):
