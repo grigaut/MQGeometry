@@ -8,14 +8,16 @@ import numpy as np
 import os
 import time
 import torch
+from mqgeometry.cli import ScriptArgs
 from mqgeometry.config import load_config
 from mqgeometry.qg_mixed import QGMixed
 from mqgeometry.specs import defaults
 
 torch.backends.cudnn.deterministic = True
 
+args = ScriptArgs.from_cli(config_default=Path("configs/double_gyre.toml"))
 specs = defaults.get()
-config = load_config(Path("configs/double_gyre.toml"))
+config = load_config(args.config)
 
 n_ens = config["n_ens"]
 nx = config["xv"].shape[0] - 1
