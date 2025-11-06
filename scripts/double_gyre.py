@@ -66,6 +66,9 @@ n_steps = sim_config["duration"]
 # time integration
 for n in range(1, n_steps + 1):
     qg.step()  # one RK3 integration step
+    if n % 500 == 0 and torch.isnan(qg.psi).any():
+        msg = "NaN appeared while computing."
+        raise ValueError(msg)
     if n % output_config["interval"] == 0:
         saver.save(f"step_{n}.pt")
 
