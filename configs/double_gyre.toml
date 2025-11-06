@@ -5,7 +5,7 @@ n_ens = 1
 nx = 256
 ny = 512
 
-Lx = 5_120_000#2_560_000
+Lx = 2_560_000
 Ly = 5_120_000
 
 # Layers
@@ -23,7 +23,7 @@ beta = 1.754e-11
 bottom_drag_coef = 3.60577e-8
 
 # Time discretization
-dt = 7200
+dt = 3600
 
 # Output
 folder = "output"
