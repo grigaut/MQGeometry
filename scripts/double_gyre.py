@@ -13,7 +13,7 @@ from qg.config import (
     load_simulation_config,
 )
 from qg.io import SaveState
-from qg.logging.utils import box, sec2text
+from qg.logging.utils import box, sec2text, step
 from qg.qgm import QGFV
 from qg.specs import defaults
 
@@ -33,6 +33,7 @@ n_ens = config["n_ens"]
 nx = config["xv"].shape[0] - 1
 ny = config["yv"].shape[0] - 1
 dt = config["dt"]
+n_year = int(365 * 24 * 3600 / dt)
 
 duration = sec2text(sim_config["duration"] * dt)
 msg = (
@@ -70,7 +71,12 @@ for n in range(1, n_steps + 1):
         msg = "NaN appeared while computing."
         raise ValueError(msg)
     if n % output_config["interval"] == 0:
-        saver.save(f"step_{n}.pt")
+        msg = f"[{step(n, n_steps)}] | Saving ѱ and q..."
+        with logger.section(msg):
+            saver.save(f"step_{n}.pt")
+    if n % n_year == 0:
+        msg = f"[{step(n, n_steps)}] | Simulated time: {sec2text(qg.time.item())}"
+        logger.info(msg)
 
 if n % output_config["interval"] != 0:
     saver.save(f"step_{n}.pt")
