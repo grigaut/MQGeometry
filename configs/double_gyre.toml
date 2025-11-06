@@ -27,7 +27,7 @@ dt = 3600
 
 # Output
 folder = "output"
-interval = 50
+interval = 720
 
 # Simulation
-duration = 4380 # Number of steps
+duration = 8760 # Number of steps
