@@ -27,3 +27,4 @@ dependencies:
     - matplotlib
     - typing_extensions
     - pytest
+    - toml

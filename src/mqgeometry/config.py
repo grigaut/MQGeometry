@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-import tomllib
+import toml
 from typing import Any
 
 import torch
@@ -11,7 +11,7 @@ import torch
 from mqgeometry.specs import defaults
 
 
-def load_config(file: str | Path) -> dict[str, Any]:
+def load_model_config(file: str | Path) -> dict[str, Any]:
     """Load model configuration from toml file.
 
     Args:
@@ -20,7 +20,7 @@ def load_config(file: str | Path) -> dict[str, Any]:
     Returns:
         dict[str, Any]: Configuration.
     """
-    config_data = tomllib.load(Path(file).open("rb"))
+    config_data = toml.load(Path(file))
     specs = defaults.get()
     Lx = config_data["Lx"]
     nx = config_data["nx"]
@@ -46,4 +46,20 @@ def load_config(file: str | Path) -> dict[str, Any]:
         "bottom_drag_coef": config_data.get("bottom_drag_coef", 0),
         "device": specs["device"],
         "dt": config_data["dt"],  # time-step (s)
+    }
+
+
+def load_output_config(file: str | Path) -> dict[str, Any]:
+    """Load output configuration from toml file.
+
+    Args:
+        file (str | Path): Toml file.
+
+    Returns:
+        dict[str, Any]: Configuration.
+    """
+    config_data = toml.load(Path(file))
+    return {
+        "folder": config_data.get("folder", "output"),
+        "interval": config_data.get("interval", 1),
     }
