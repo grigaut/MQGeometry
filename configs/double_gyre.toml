@@ -24,3 +24,7 @@ bottom_drag_coef = 3.60577e-8
 
 # Time discretization
 dt = 7200
+
+# Output
+folder = "output"
+interval = 50
