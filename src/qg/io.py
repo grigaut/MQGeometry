@@ -8,6 +8,7 @@ import toml
 import torch
 
 from qg import logging
+from qg.specs import defaults
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,7 @@ class SaveState:
     """Class to save model state."""
 
     def __init__(
-        self,
-        output_folder: str | Path,
+        self, output_folder: str | Path, dtype: torch.dtype | None = None
     ) -> None:
         """Satet saver.
 
@@ -60,6 +60,9 @@ class SaveState:
             gitignore = self.folder.joinpath(".gitignore")
             with gitignore.open("w") as file:
                 file.write("*")
+        self.dtype = defaults.get_dtype(dtype=dtype)
+        msg = f"Tensors will be saved as {self.dtype}."
+        logger.info(msg)
 
     def save(self, filename: str, **tensors: torch.Tensor) -> None:
         """Save registered tensors.
@@ -74,7 +77,10 @@ class SaveState:
             msg = "No tensors registered."
             raise ValueError(msg)
         path = self.folder.joinpath(filename)
-        torch.save({k: v.detach().cpu() for k, v in tensors.items()}, path)
+        torch.save(
+            {k: v.detach().cpu().to(dtype=self.dtype) for k, v in tensors.items()},
+            path,
+        )
         msg = f"Saved tensors to {path}"
         logger.info(msg)
 
