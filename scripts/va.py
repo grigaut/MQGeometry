@@ -112,6 +112,11 @@ saver = SaveState(output_config["folder"])
 saver.save("ic.pt", psi=qg_3l.psi, q=qg_3l.q)
 saver.copy_config(args.config)
 
+u, v = grad_perp(qg_3l.psi[0, 0], qg_3l.dx, qg_3l.dy)
+U: float = (u.abs().max() ** 2 + v.abs().max() ** 2).sqrt().item()
+L: float = qg_3l.dx.item()
+T: float = L / U
+
 # Width for boundaries
 p = 4
 
@@ -195,10 +200,10 @@ def regularization(
     dq_2 = div_flux_5pts_no_pad(
         q2, u2[..., 1:-1, :], v2[..., :, 1:-1], qg_3l.dx, qg_3l.dy
     )
-    return (dtq2 + dq_2).square().sum()
+    return ((dtq2 + dq_2) * T**2).square().sum()
 
 
-gamma = 1 / comparison_interval
+gamma = 10 / comparison_interval
 
 # PV computation
 
@@ -220,19 +225,18 @@ def compute_q_psi2(psi1, psi2) -> torch.Tensor:
 for c in range(n_cycles):
     qg_3l.reset_time()
     times = [qg_3l.time]
-    psis = [qg_3l.psi[:, :1, psi_slice_w[0], psi_slice_w[1]].clone()]
+    psis = [qg_3l.psi[:, :1, psi_slice_w[0], psi_slice_w[1]]]
 
     ## Scaling parameters
-    u, v = grad_perp(crop(psis[0][0, 0], p), qg_3l.dx, qg_3l.dy)
-    U: float = ((u**2).max() + (v**2).max()).sqrt().item()
-    L: float = qg_3l.dx.item()
-    T: float = L / U
 
     # time integration
     for n in range(1, n_steps + 1):
         qg_3l.step()  # one RK3 integration step
         times.append(qg_3l.time.item())
-        psis.append(qg_3l.psi.clone()[:, :1, psi_slice_w[0], psi_slice_w[1]])
+        psis.append(qg_3l.psi[:, :1, psi_slice_w[0], psi_slice_w[1]])
+
+    msg = f"Cycle {step(c + 1, n_cycles)}: Model spin-up completed."
+    logger.info(box(msg, style="round"))
 
     psi_bcs = [Boundaries.extract(psi, p, -p - 1, p, -p - 1, 2) for psi in psis]
     psi_bc_interp = QuadraticInterpolation(times, psi_bcs)
@@ -241,7 +245,7 @@ for c in range(n_cycles):
     psi0_mean = psi0[:, :1].mean()
 
     alpha = torch.tensor(0.5, **specs, requires_grad=True)
-    psi2_adim = (torch.rand_like(psi0) * 1e-2).requires_grad_()
+    psi2_adim = (torch.rand_like(psi0) * 1e-1).requires_grad_()
     dpsi2 = (torch.rand_like(psi2_adim) * 1e-3).requires_grad_()
 
     numel = alpha.numel() + psi2_adim.numel() + dpsi2.numel()
@@ -251,7 +255,7 @@ for c in range(n_cycles):
     optimizer = torch.optim.Adam(
         [
             {"params": [alpha], "lr": 1e-1},
-            {"params": [psi2_adim], "lr": 1e-2},
+            {"params": [psi2_adim], "lr": 1e-1},
             {"params": [dpsi2], "lr": 1e-3},
         ],
     )
@@ -270,6 +274,7 @@ for c in range(n_cycles):
         optimizer.zero_grad()
         qg = QGMixed(config_sliced)
         qg.y0 = qg_3l.y0
+        qg.set_wind_forcing(curl_tau[..., imin:imax, jmin:jmax])
         qg.reset_time()
 
         with torch.enable_grad():
@@ -301,7 +306,7 @@ for c in range(n_cycles):
                 psi1 = qg.psi
                 dpsi1_ = (psi1 - psi1_) / dt
                 dpsi2_ = crop(dpsi2, p) + alpha * (psi1 - psi1_) / dt
-                reg = gamma * (regularization(psi1_, psi2_, dpsi1_, dpsi2_) * (T**4))
+                reg = gamma * (regularization(psi1_, psi2_, dpsi1_, dpsi2_))
                 loss += reg
 
                 if n % comparison_interval == 0:

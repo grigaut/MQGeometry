@@ -31,11 +31,11 @@ prefix = "results_optim"
 interval = 720
 
 # Simulation
-duration = 125 # Number of steps
+duration = 250 # Number of steps
 startup_file="data/ic.pt"
 
 # Optimization
-optimization_steps = 75
+optimization_steps = 200
 comparison_interval = 1
 cycles = 1
 
