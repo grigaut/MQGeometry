@@ -1,5 +1,6 @@
 """Concatenate targets into a single file."""
 
+import toml
 from qg.logging import getLogger
 from pathlib import Path
 
@@ -16,16 +17,24 @@ def load_psi(file: Path) -> torch.Tensor:
     return psi[:, :1]
 
 
-config = load_model_config("output/g5k/targets/_config.toml")
-dt = config["dt"]
 input_dir = Path("output/g5k/targets")
+
+config = load_model_config(input_dir.joinpath("_config.toml"))
+dt = config["dt"]
 
 output_dir = Path("output/targets")
 if not output_dir.is_dir():
-    output_dir.mkdir()
+    output_dir.mkdir(parents=True)
     gitignore = output_dir.joinpath(".gitignore")
     with gitignore.open("w") as file:
         file.write("*")
+
+toml.dump(
+    toml.load(input_dir.joinpath("_config.toml")),
+    output_dir.joinpath("_config.toml").open("w"),
+)
+msg = f"Saved configuration to {output_dir.joinpath('_config.toml')}"
+logger.info(msg)
 
 for prefix in ["train", "validate", "test"]:
     with logger.section(f"[{prefix.upper()}] Concatenating data"):
@@ -38,7 +47,7 @@ for prefix in ["train", "validate", "test"]:
         times = torch.tensor([dt * s for s in steps], dtype=torch.int32)
 
         logger.info(
-            f"Time ranges from {sec2text(times[0].item())} to {sec2text(times[-1].item())}."
+            f"Times range from {sec2text(times[0].item())} to {sec2text(times[-1].item())}."
         )
 
         torch.save(
