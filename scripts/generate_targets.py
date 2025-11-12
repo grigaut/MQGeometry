@@ -80,6 +80,7 @@ n_obs = 500
 duration = sec2text(n_obs * obs_delay * dt)
 msg = f"[TRAINING] Generating set over {duration}..."
 with logger.section(msg):
+    saver.save(f"train_step_{0}.pt", psi=qg.psi, q=qg.q)
     for n in range(1, n_obs * obs_delay + 1):
         qg.step()
         if n % (obs_delay) == 0:
@@ -98,6 +99,7 @@ n_obs = 100
 duration = sec2text(n_obs * obs_delay * dt)
 msg = f"[VALIDATION] Generating set over {duration}..."
 with logger.section(msg):
+    saver.save(f"validate_step_{0}.pt", psi=qg.psi, q=qg.q)
     for n in range(1, n_obs * obs_delay + 1):
         qg.step()
         if n % (obs_delay) == 0:
@@ -116,6 +118,7 @@ n_obs = 100
 duration = sec2text(n_obs * obs_delay * dt)
 msg = f"[TEST] Generating test set over {duration}..."
 with logger.section(msg):
+    saver.save(f"test_step_{0}.pt", psi=qg.psi, q=qg.q)
     for n in range(1, n_obs * obs_delay + 1):
         qg.step()
         if n % (obs_delay) == 0:
